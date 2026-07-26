@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="description" content="GENIUS AGI - Conscious Local AI">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>GENIUS AGI</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-theme="dark">
+<canvas id="particle-canvas"></canvas>
+
+<div id="app">
+  <header id="header">
+    <div class="header-left">
+      <button class="menu-btn" id="menu-btn">☰</button>
+      <div class="logo">
+        <div class="logo-icon">🧠</div>
+        <div class="logo-text">GENIUS</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="agent-badge" id="consciousness-badge" title="Consciousness">
+        <span>🧠</span><span>80%</span>
+      </div>
+      <div class="agent-badge" id="current-agent">
+        <span id="agent-icon">🧠</span>
+        <span id="agent-name">General</span>
+      </div>
+      <button class="header-btn" id="settings-btn">⚙️</button>
+    </div>
+  </header>
+
+  <div id="chat-container">
+    <div class="welcome-screen" id="welcome-screen">
+      <div class="welcome-logo">🧠</div>
+      <h1 class="welcome-title" data-i18n="welcome_title">GENIUS AGI</h1>
+      <p class="welcome-subtitle" data-i18n="welcome_subtitle">Conscious AI that adapts, learns, and evolves</p>
+      <div class="device-info" id="device-info"></div>
+      <div class="quick-actions">
+        <div class="quick-action" data-action="code"><div class="quick-action-icon">💻</div><div class="quick-action-text" data-i18n="qa_code">Write Code</div></div>
+        <div class="quick-action" data-action="math"><div class="quick-action-icon">🔢</div><div class="quick-action-text" data-i18n="qa_math">Solve Math</div></div>
+        <div class="quick-action" data-action="translate"><div class="quick-action-icon">🌍</div><div class="quick-action-text" data-i18n="qa_translate">Translate</div></div>
+        <div class="quick-action" data-action="explain"><div class="quick-action-icon">📚</div><div class="quick-action-text" data-i18n="qa_explain">Explain</div></div>
+      </div>
+    </div>
+    <div id="messages"></div>
+  </div>
+
+  <div id="input-area">
+    <div class="input-toolbar">
+      <button class="toolbar-btn" id="btn-agents" data-i18n="agents">🧩 Agents</button>
+      <button class="toolbar-btn" id="btn-files" data-i18n="files">📎 Files</button>
+      <button class="toolbar-btn" id="btn-sandbox" data-i18n="sandbox">🏖️ Sandbox</button>
+      <button class="toolbar-btn" id="btn-voice">🎤</button>
+    </div>
+    <div class="input-wrapper">
+      <textarea id="message-input" rows="1" placeholder="Ask GENIUS anything..." data-i18n-placeholder="input_placeholder"></textarea>
+      <div class="input-actions">
+        <button class="input-btn" id="btn-attach">📎</button>
+        <button class="input-btn send-btn" id="btn-send">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar-overlay"></div>
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">GENIUS</div>
+    <button class="sidebar-close" id="sidebar-close">✕</button>
+  </div>
+  <button class="new-chat-btn" id="new-chat-btn" data-i18n="new_chat">+ New Chat</button>
+  <div class="chat-list" id="chat-list"></div>
+  <div class="sidebar-footer">
+    <button class="sidebar-btn" id="btn-export">📤 <span data-i18n="export">Export</span></button>
+    <button class="sidebar-btn" id="btn-import">📥 <span data-i18n="import">Import</span></button>
+    <button class="sidebar-btn" id="btn-clear">🗑️ <span data-i18n="clear">Clear All</span></button>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+  </div>
+</aside>
+
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="settings">⚙️ Settings</div>
+      <button class="modal-close" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-item">
+        <label class="setting-label" data-i18n="language">Language</label>
+        <select id="setting-lang">
+          <option value="en">🇺🇸 English</option>
+          <option value="ar" selected>🇸🇦 العربية</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="zh">🇨🇳 中文</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="pt">🇧🇷 Português</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="ko">🇰🇷 한국어</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+          <option value="hi">🇮🇳 हिन्दी</option>
+          <option value="id">🇮🇩 Indonesia</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label" data-i18n="theme">Theme</label>
+        <div class="theme-grid">
+          <div class="theme-option active" data-theme="dark">Dark</div>
+          <div class="theme-option" data-theme="light">Light</div>
+          <div class="theme-option" data-theme="ocean">Ocean</div>
+          <div class="theme-option" data-theme="forest">Forest</div>
+          <div class="theme-option" data-theme="sunset">Sunset</div>
+          <div class="theme-option" data-theme="cyber">Cyber</div>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label" data-i18n="voice">Voice Output</label>
+        <select id="setting-voice"><option value="off">Off</option><option value="on">On</option></select>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label">🧠 Consciousness</label>
+        <select id="setting-consciousness">
+          <option value="on">On — Full consciousness</option>
+          <option value="lite">Lite — Basic emotions</option>
+          <option value="off">Off — Classic mode</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label class="setting-label" data-i18n="memory">Memory</label>
+        <p class="setting-desc" id="memory-usage">Using 0 KB</p>
+        <button class="sidebar-btn" id="btn-clear-memory" style="width:100%;margin-top:8px">🗑️ <span data-i18n="clear_memory">Clear Memory</span></button>
+      </div>
+      <div class="setting-item" style="border-top:1px solid var(--border-glow);padding-top:20px">
+        <label class="setting-label">☁️ Google Drive Sync</label>
+        <p class="setting-desc">Backup data to Google Drive</p>
+        <div id="gdrive-status" style="margin-bottom:10px;font-size:13px;color:var(--text-muted)">Not connected</div>
+        <button class="sidebar-btn" id="btn-gdrive-signin" style="width:100%;margin-bottom:8px;background:linear-gradient(135deg,#4285f4,#34a853);color:#fff;border:none">
+          <span>🔐</span> <span>Sign in with Google</span>
+        </button>
+        <button class="sidebar-btn" id="btn-gdrive-backup" style="width:100%;margin-bottom:8px;display:none">
+          <span>📤</span> <span>Backup to Drive</span>
+        </button>
+        <button class="sidebar-btn" id="btn-gdrive-restore" style="width:100%;display:none">
+          <span>📥</span> <span>Restore from Drive</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-consciousness">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <div class="modal-title">🧠 Consciousness</div>
+      <button class="modal-close" data-close>✕</button>
+    </div>
+    <div class="modal-body"><div id="consciousness-panel"></div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-agents">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="select_agent">🧩 Select Agent</div>
+      <button class="modal-close" data-close>✕</button>
+    </div>
+    <div class="modal-body"><div class="agent-grid" id="agent-grid"></div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-files">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="upload_files">📎 Upload Files</div>
+      <button class="modal-close" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="file-drop-zone" id="file-drop-zone">
+        <div class="file-drop-icon">📁</div>
+        <div class="file-drop-text" data-i18n="drop_files">Drop files here or click to browse</div>
+        <input type="file" id="file-input" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv" style="display:none">
+      </div>
+      <div class="file-list" id="file-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-sandbox">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title" data-i18n="code_sandbox">🏖️ Code Sandbox</div>
+      <button class="modal-close" data-close>✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Run JavaScript safely in your browser</p>
+      <div class="sandbox-editor"><textarea id="sandbox-code">console.log('Hello GENIUS');</textarea></div>
+      <button class="sandbox-run" id="sandbox-run">▶ Run Code</button>
+      <div class="sandbox-output" id="sandbox-output">// Output will appear here...</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/ai-engine.js"></script>
+<script src="js/consciousness.js"></script>
+<script src="js/internet.js"></script>
+<script src="js/gdrive.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
