@@ -94,13 +94,11 @@ function escapeHtml(text) { const div = document.createElement('div'); div.textC
 
 function formatMessage(text) {
   text = escapeHtml(text);
-  text = text.replace(/```(\w+)?
-([\s\S]*?)```/g, (match, lang, code) => '<div class="code-block"><div class="code-header"><span class="code-lang">' + (lang || 'text') + '</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>');
+  text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => '<div class="code-block"><div class="code-header"><span class="code-lang">' + (lang || 'text') + '</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>');
   text = text.replace(/`([^`]+)`/g, '<code style="background:rgba(0,212,255,0.1);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;color:var(--accent-primary)">$1</code>');
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  text = text.replace(/
-/g, '<br>');
+  text = text.replace(/\n/g, '<br>');
   return text;
 }
 
@@ -291,8 +289,7 @@ function initSandbox() {
       let logs = [];
       const mockConsole = { log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')), error: (...args) => logs.push('❌ ' + args.map(a => String(a)).join(' ')), warn: (...args) => logs.push('⚠️ ' + args.map(a => String(a)).join(' ')) };
       new Function('console', code)(mockConsole);
-      output.textContent = logs.join('
-') || '// No output';
+      output.textContent = logs.join('\n') || '// No output';
       output.style.color = '#c9d1d9';
     } catch (err) { output.textContent = '❌ Error: ' + err.message; output.style.color = '#ff4444'; }
   });

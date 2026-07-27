@@ -116,7 +116,7 @@ async function generateResponse(input) {
     tutor: '**Tutor** 📚\n\nMath, Programming, Languages, Science — what subject shall we study?',
     analyst: '**Analyst** 📊\n\nData interpretation, statistics, business insights — share your data.',
     philosopher: '**Philosopher** 🤔\n\nEthics, existence, logic, politics — what\'s on your mind?',
-    health: '**Health** ⚕️\n\nNutrition, fitness, mental wellness, sleep. *Not a doctor — consult professionals for medical advice.*\n\nWhat topic?';
+    health: '**Health** ⚕️\n\nNutrition, fitness, mental wellness, sleep. *Not a doctor — consult professionals for medical advice.*\n\nWhat topic?'
   };
   if (agentResponses[agent.id]) return agentResponses[agent.id];
 
