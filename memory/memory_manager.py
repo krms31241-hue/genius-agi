@@ -10,6 +10,12 @@ from .episodic_memory import EpisodicMemory
 from .semantic_memory import SemanticMemory
 from .skill_memory import SkillMemory
 from .memory_models import Experience, Fact, Skill
+from .vectorizer import MemoryVectorizer
+from .semantic_search import SemanticSearch
+from .link_graph import MemoryGraph
+from .ranking import MemoryRanker
+from .hybrid_search import HybridSearch
+from .context_recall import ContextRecallEngine
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +29,21 @@ class MemoryManager:
         self.conn.execute("PRAGMA journal_mode=WAL;")
         self.conn.execute("PRAGMA foreign_keys=ON;")
 
+        # Core Storage
         self.index = MemoryIndex(self.conn, self.lock)
         self.working = WorkingMemory(self.conn, self.lock)
         self.episodic = EpisodicMemory(self.conn, self.lock, self.index)
         self.semantic = SemanticMemory(self.conn, self.lock, self.index)
         self.skill = SkillMemory(self.conn, self.lock, self.index)
+        
+        # Phase 3: Retrieval & Graph
+        self.vectorizer = MemoryVectorizer()
+        self.graph = MemoryGraph(self.conn, self.lock)
+        self.ranker = MemoryRanker()
+        self.semantic_search = SemanticSearch(self.vectorizer)
+        self.hybrid_search = HybridSearch(self.vectorizer, self.ranker)
+        self.context_recall = ContextRecallEngine(self.hybrid_search, self.graph)
+        
         logger.info("MemoryManager initialized at %s", self.db_path)
 
     def close(self):
@@ -93,3 +109,20 @@ class MemoryManager:
     # Global Index API
     def search_index(self, query: str, entity_type: Optional[str] = None) -> List[Dict[str, Any]]:
         return self.index.search(query, entity_type)
+
+    # Phase 3: Semantic & Hybrid Retrieval API
+    def search_semantic(self, query: str, memories: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
+        return [m for m, _ in self.semantic_search.search(query, memories, top_k)]
+
+    def search_hybrid(self, query: str, memories: List[Dict[str, Any]], top_k: int = 10) -> List[Dict[str, Any]]:
+        return self.hybrid_search.search(query, memories, top_k)
+
+    # Phase 3: Graph Linking API
+    def add_memory_link(self, source: str, target: str, relation: str = "related", weight: float = 1.0) -> bool:
+        return self.graph.add_link(source, target, relation, weight)
+
+    def get_related_memories(self, memory_id: str) -> List[Dict[str, Any]]:
+        return self.graph.related(memory_id)
+
+    def get_memory_context(self, query: str, memories: List[Dict[str, Any]], limit: int = 5) -> List[Dict[str, Any]]:
+        return self.context_recall.retrieve_context(query, memories, limit)
