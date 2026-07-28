@@ -1,0 +1,18 @@
+{
+  "id": "cand_1785203665_85bfbd6f",
+  "finding_type": "dead_code",
+  "reason": "Potentially unused definition: test_security_analyzer_safe",
+  "affected_files": [
+    "tests/test_lab.py"
+  ],
+  "risk_level": "low",
+  "estimated_gain": 0.25,
+  "rollback_info": {
+    "tests/test_lab.py": "504c43f3cbfd63fe"
+  },
+  "proposed_changes": {
+    "tests/test_lab.py": "\"\"\"Validation tests for the Code Laboratory.\"\"\"\nimport sys\nimport os\nimport json\nimport pytest\n\nsys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), \"..\")))\n\nfrom lab.orchestrator import CodeLaboratory\nfrom lab.watchdog import Watchdog, WatchdogTimeout\nfrom lab.failure_db import FailureDB\nfrom lab.analyzers.syntax import SyntaxAnalyzer\nfrom lab.analyzers.security import SecurityAnalyzer\n\ndef test_syntax_analyzer_pass():\n    res = SyntaxAnalyzer().analyze(\"def hello():\\n    return 42\", \"test.py\", {})\n    from pprint import pprint\n    print(\"\\n========== RESULT ==========\")\n    pprint(res)\n    print(\"============================\\n\")\n\n    assert res[\"passed\"] is True\n    assert res[\"score\"] == 100\n\ndef test_syntax_analyzer_fail():\n    res = SyntaxAnalyzer().analyze(\"def hello(\\n    return 42\", \"test.py\", {})\n    assert res[\"passed\"] is False\n    assert \"SyntaxError\" in res[\"issues\"][0]\n\ndef test_security_analyzer_safe():\n    res = SecurityAnalyzer().analyze(\"import os\\nprint('safe')\", \"test.py\", {})\n    assert res[\"passed\"] is True\n\ndef test_security_analyzer_unsafe():\n    res = SecurityAnalyzer().analyze(\"eval('1+1')\", \"test.py\", {})\n    assert res[\"passed\"] is False\n    assert any(\"eval\" in i for i in res[\"issues\"])\n\ndef test_failure_db_learning():\n    db = FailureDB(\":memory:\")\n    code = \"bad_code()\"\n    assert db.is_known_failure(code) is None\n    db.learn_and_block(code, \"test_error\", \"details\")\n    known = db.is_known_failure(code)\n    assert known is not None\n    assert known[\"error_type\"] == \"test_error\"\n\ndef test_watchdog_timeout():\n    import time\n    wd = Watchdog(timeout_sec=0.5)\n    def slow():\n        time.sleep(2)\n        return \"done\"\n    with pytest.raises(WatchdogTimeout):\n        wd.run(slow)\n\ndef test_orchestrator_rejects_bad_patch():\n    lab = CodeLaboratory(timeout_sec=5.0, sandbox_timeout=3.0)\n    bad = {\"main.py\": \"eval('danger')\\nwhile True: pass\"}\n    res = lab.validate_patch(bad, \"main.py\", {\"patch_id\": \"test_bad\"})\n    assert res[\"passed\"] is False\n    assert res.get(\"rejected\") is True\n\ndef test_orchestrator_accepts_safe_patch():\n    lab = CodeLaboratory(timeout_sec=10.0, sandbox_timeout=5.0)\n    safe = {\"main.py\": \"def run():\\n    return 'ok'\\nif __name__ == '__main__':\\n    print(run())\"}\n    res = lab.validate_patch(safe, \"main.py\", {\"patch_id\": \"test_safe\"})\n\n    from pprint import pprint\n    print(\"\\n========== RESULT ==========\")\n    pprint(res)\n    print(\"============================\\n\")\n    assert res[\"passed\"] is True\n    assert res[\"scores\"][\"confidence\"] > 70\n"
+  },
+  "status": "pending",
+  "created_at": 1785203665.7714958
+}

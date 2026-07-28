@@ -1,0 +1,18 @@
+{
+  "id": "cand_1785203665_4d458024",
+  "finding_type": "duplication",
+  "reason": "Duplicated block also in .lab_backups/snap_1785200412/main.py",
+  "affected_files": [
+    ".lab_backups/snap_1785201110/main.py"
+  ],
+  "risk_level": "medium",
+  "estimated_gain": 0.25,
+  "rollback_info": {
+    ".lab_backups/snap_1785201110/main.py": "4d9424d5de6f7074"
+  },
+  "proposed_changes": {
+    ".lab_backups/snap_1785201110/main.py": "def run():\n    return 'ok'\n\nif __name__ == '__main__':\n    print(run())\n"
+  },
+  "status": "pending",
+  "created_at": 1785203665.7694733
+}

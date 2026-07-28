@@ -1,0 +1,49 @@
+{
+  "patch_id": "test_bad",
+  "timestamp": 1785203579.3412385,
+  "passed": false,
+  "scores": {
+    "confidence": 51.23,
+    "risk": 62.5,
+    "performance": 50,
+    "security": 75,
+    "maintainability": 50.0
+  },
+  "sandbox": {},
+  "analyzers": [
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "syntax"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "imports"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "dependencies"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "circular_dependencies"
+    },
+    {
+      "passed": false,
+      "score": 75,
+      "issues": [
+        "Unsafe call: eval"
+      ],
+      "analyzer": "security"
+    }
+  ],
+  "rejected": true,
+  "reason": "Static analysis failure"
+}

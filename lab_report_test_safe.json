@@ -1,0 +1,84 @@
+{
+  "patch_id": "test_safe",
+  "timestamp": 1785203754.095793,
+  "passed": true,
+  "scores": {
+    "confidence": 100.0,
+    "risk": 0.0,
+    "performance": 100,
+    "security": 100,
+    "maintainability": 100.0
+  },
+  "sandbox": {
+    "success": true,
+    "exit_code": 0,
+    "stdout": "ok\n",
+    "stderr": "",
+    "duration": 0.06481456756591797,
+    "memory_mb": 0.0,
+    "cpu_sec": 0.06481456756591797
+  },
+  "analyzers": [
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "syntax"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "imports"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "dependencies"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "circular_dependencies"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "security"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "memory"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "performance"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "style"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "architecture"
+    },
+    {
+      "passed": true,
+      "score": 100,
+      "issues": [],
+      "analyzer": "regression"
+    }
+  ],
+  "snap_id": "snap_1785203754"
+}
