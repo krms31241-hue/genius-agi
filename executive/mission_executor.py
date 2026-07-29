@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 class MissionExecutor:
     def __init__(self, mission_mgr: MissionManager, goal_mgr: GoalManager,
                  resource_mgr: ResourceManager, data_dir: str = "executive_data",
-                 task_runner: Optional[Callable[[str, Dict[str, Any]], bool]] = None):
+                 task_runner: Optional[Callable[[str, Dict[str, Any]], bool]] = None,
+                 simulation_guard: Any = None):
         self.mission_mgr = mission_mgr
         self.goal_mgr = goal_mgr
         self.resource_mgr = resource_mgr
@@ -32,6 +33,7 @@ class MissionExecutor:
         self.recovery = RecoveryManager(history=self.history)
         self.context: Optional[ExecutionContext] = None
         self.task_runner = task_runner or self._default_task_runner
+        self.simulation_guard = simulation_guard
 
     def _default_task_runner(self, task_id: str, ctx: Dict[str, Any]) -> bool:
         if "fail" in task_id.lower():
@@ -90,6 +92,17 @@ class MissionExecutor:
     def _run_task(self, task_id: str, mission_id: str) -> tuple[bool, str]:
         record = TaskExecutionRecord(task_id=task_id, mission_id=mission_id, started_at=time.time())
         try:
+            # Automatic pre-execution simulation guard
+            if self.simulation_guard:
+                guard_res = self.simulation_guard.evaluate_action(
+                    action_type="execute_task",
+                    target_id=task_id,
+                    parameters=self.context.shared_context if self.context else {},
+                    estimated_cost=1.0, estimated_duration=1.0
+                )
+                if not guard_res["allowed"]:
+                    raise RuntimeError(f"SimulationGuard blocked: {guard_res['recommendation']}")
+
             self.task_runner(task_id, self.context.shared_context if self.context else {})
             record.status = "success"
             record.result = "completed"
