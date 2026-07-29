@@ -29,7 +29,8 @@ class WorldModel:
         self._load_state()
 
     def create_entity(self, entity_type: str, attributes: Dict[str, Any] = None,
-                      relationships: Dict[str, List[str]] = None, metadata: Dict[str, Any] = None) -> WorldEntity:
+                      relationships: Dict[str, List[str]] = None, metadata: Dict[str, Any] = None,
+                      entity_id: Optional[str] = None) -> WorldEntity:
         """Create and register a new entity. Automatically records creation event."""
         entity = WorldEntity(
             entity_type=entity_type,
@@ -37,6 +38,9 @@ class WorldModel:
             relationships=relationships or {},
             metadata=metadata or {}
         )
+        if entity_id:
+            entity.id = entity_id
+            
         self.state.add_entity(entity)
         self._record_event(entity.id, {}, entity.to_dict(), "system", "entity_created")
         logger.info("Created entity %s of type %s", entity.id, entity_type)
