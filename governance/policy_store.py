@@ -26,14 +26,14 @@ class PolicyStore:
                 self._atomic_save(p, [])
 
     def _atomic_save(self, path: str, data: Any):
-        fd, tmp_path = tempfile.mkstemp(dir=self.data_dir, suffix=".tmp")
+        fd, tmp = tempfile.mkstemp(dir=self.data_dir, suffix=".tmp")
         try:
             with os.fdopen(fd, 'w') as f:
                 json.dump(data, f, indent=2)
-            shutil.move(tmp_path, path)
+            shutil.move(tmp, path)
         except Exception:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+            if os.path.exists(tmp):
+                os.remove(tmp)
             raise
 
     def _load_json(self, path: str) -> List[Dict[str, Any]]:
@@ -55,7 +55,12 @@ class PolicyStore:
         data = self._load_json(self.policies_path)
         for i, p in enumerate(data):
             if p["id"] == policy.id:
-                data[i] = policy.to_dict()
+                new_dict = policy.to_dict()
+                # Prevent stale policy objects from accidentally downgrading status during partial updates
+                if new_dict.get("status") == "draft" and p.get("status") not in ("draft", None):
+                    new_dict["status"] = p["status"]
+                new_dict["updated_at"] = time.time()
+                data[i] = new_dict
                 self._atomic_save(self.policies_path, data)
                 self._record_history("update", policy)
                 logger.info("Policy updated: %s v%s", policy.id, policy.version)

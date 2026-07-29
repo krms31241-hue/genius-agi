@@ -91,6 +91,12 @@ class GoalManager:
             goals = [g for g in goals if g.status == status]
         return goals
 
+    def validate_goal(self, goal: Goal) -> bool:
+        """Basic structural validation for goal injection."""
+        if not goal.id or not goal.title:
+            return False
+        return True
+
     def _record_history(self, action: str, goal: Goal):
         hist = self._load_json(self.history_path)
         hist.append({"action": action, "goal_id": goal.id, "status": goal.status.value, "timestamp": time.time()})

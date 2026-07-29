@@ -7,7 +7,7 @@ PASS=false
 OUTPUT=""
 
 echo "========================================================"
-echo "  EXECUTIVE STAGE 3 — FULL PROJECT VALIDATION"
+echo "  EXECUTIVE STAGE 3 — FINAL INTEGRATION VALIDATION"
 echo "========================================================"
 
 while [ $RETRY -lt $MAX_RETRIES ]; do
@@ -30,8 +30,16 @@ if errors:
 print('✅ Static syntax verification passed.')
 " || true
 
-    echo "▶ Running Stage 3 & Full Suite..."
-    OUTPUT=$(python -m pytest tests/test_mission_executor.py tests/ -v --tb=short 2>&1) || true
+    echo "▶ Running Stage 3 Integration Tests..."
+    if ! python -m pytest tests/test_stage3_integration.py -v --tb=short; then
+        echo "⚠ Integration tests failed. Retrying..."
+        RETRY=$((RETRY+1))
+        sleep 1
+        continue
+    fi
+
+    echo "▶ Running Complete Project Test Suite..."
+    OUTPUT=$(python -m pytest tests/ -v --tb=short 2>&1) || true
     echo "$OUTPUT"
     
     if echo "$OUTPUT" | grep -q "passed" && ! echo "$OUTPUT" | grep -q "failed" && ! echo "$OUTPUT" | grep -q "ERROR"; then
@@ -39,7 +47,7 @@ print('✅ Static syntax verification passed.')
         break
     fi
 
-    echo "⚠ Validation failed. Retrying..."
+    echo "⚠ Full suite failed. Retrying..."
     RETRY=$((RETRY+1))
     sleep 1
 done
@@ -47,9 +55,10 @@ done
 echo "========================================================"
 if [ "$PASS" = true ]; then
     PASSED_COUNT=$(echo "$OUTPUT" | grep -oE '[0-9]+ passed' | head -1 | awk '{print $1}')
-    echo "✅ EXECUTIVE STAGE 3 VALIDATION PASSED"
+    echo "========================================"
+    echo "EXECUTIVE STAGE 3 VALIDATION PASSED"
     echo "${PASSED_COUNT:-0} TESTS PASSED"
-    echo "========================================================"
+    echo "========================================"
     exit 0
 else
     echo "❌ VALIDATION FAILED AFTER $MAX_RETRIES ATTEMPTS."
