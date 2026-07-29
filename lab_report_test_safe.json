@@ -1,6 +1,6 @@
 {
   "patch_id": "test_safe",
-  "timestamp": 1785209728.0117757,
+  "timestamp": 1785296243.4969316,
   "passed": true,
   "scores": {
     "confidence": 100.0,
@@ -14,9 +14,9 @@
     "exit_code": 0,
     "stdout": "ok\n",
     "stderr": "",
-    "duration": 0.06665682792663574,
+    "duration": 0.06409859657287598,
     "memory_mb": 0.0,
-    "cpu_sec": 0.06665682792663574
+    "cpu_sec": 0.06409859657287598
   },
   "analyzers": [
     {
@@ -80,5 +80,5 @@
       "analyzer": "regression"
     }
   ],
-  "snap_id": "snap_1785209727"
+  "snap_id": "snap_1785296243"
 }

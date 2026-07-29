@@ -1,9 +1,8 @@
-"""CPU/Memory limits, recursion & deadlock detection."""
-import os
+"""CPU/Memory limits, recursion & deadlock detection.
+Uses monotonic timing and recursion limits only to avoid process-wide RLIMIT crashes."""
 import sys
 import time
 import threading
-import resource
 from typing import Optional
 
 class ResourceGuard:
@@ -11,29 +10,23 @@ class ResourceGuard:
         self.max_cpu_sec = max_cpu_sec
         self.max_memory_mb = max_memory_mb
         self.max_recursion_depth = max_recursion_depth
-        self._start_time = time.time()
+        self._start_time = time.monotonic()
         self._lock_registry = {}
         self._original_recursion_limit = sys.getrecursionlimit()
 
     def apply_limits(self):
+        """Apply safe limits without modifying process-wide resource constraints."""
+        self._original_recursion_limit = sys.getrecursionlimit()
         sys.setrecursionlimit(self.max_recursion_depth)
-        mem_bytes = self.max_memory_mb * 1024 * 1024
-        try:
-            resource.setrlimit(resource.RLIMIT_AS, (mem_bytes, mem_bytes))
-            resource.setrlimit(resource.RLIMIT_CPU, (int(self.max_cpu_sec), int(self.max_cpu_sec) + 5))
-        except Exception:
-            pass
+        self._start_time = time.monotonic()
 
     def release_limits(self):
+        """Restore original recursion limit."""
         sys.setrecursionlimit(self._original_recursion_limit)
-        try:
-            resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
-            resource.setrlimit(resource.RLIMIT_CPU, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
-        except Exception:
-            pass
 
     def check_cpu_time(self):
-        elapsed = time.time() - self._start_time
+        """Check elapsed time against max_cpu_sec using monotonic clock."""
+        elapsed = time.monotonic() - self._start_time
         if elapsed > self.max_cpu_sec:
             raise TimeoutError(f"CPU time limit exceeded: {elapsed:.2f}s > {self.max_cpu_sec}s")
 
@@ -41,7 +34,7 @@ class ResourceGuard:
         acquired = lock.acquire(timeout=timeout)
         if not acquired:
             raise RuntimeError(f"Deadlock detected: Failed to acquire lock '{name}' within {timeout}s")
-        self._lock_registry[name] = time.time()
+        self._lock_registry[name] = time.monotonic()
         return True
 
     def release_lock(self, lock: threading.Lock, name: str):
@@ -52,4 +45,4 @@ class ResourceGuard:
         self._lock_registry.pop(name, None)
 
     def reset_timer(self):
-        self._start_time = time.time()
+        self._start_time = time.monotonic()
