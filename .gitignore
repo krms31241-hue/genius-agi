@@ -8,3 +8,5 @@ htmlcov/
 .lab_backups/
 core
 *.log
+providers_dump.txt
+.env
