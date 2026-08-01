@@ -203,7 +203,7 @@ registry.register(
 
 registry.register(
     ModelInfo(
-        name="gemini-2.5-pro",
+        name="gemini-flash-latest",
         provider=Provider.GEMINI,
         model_type=ModelType.ONLINE,
         context_window=1000000,

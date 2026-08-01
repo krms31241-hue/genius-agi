@@ -16,6 +16,7 @@ from core.providers import (
     OpenAIProvider,
     AnthropicProvider,
     OpenRouterProvider,
+    GeminiProvider,
 )
 
 from core.config.providers_config import (
@@ -152,6 +153,32 @@ class ProvidersBootstrap:
 
 
 
+
+
+        gemini_key = self.config_manager.get_key(
+            "gemini"
+        )
+
+        if gemini_key:
+            try:
+                provider = GeminiProvider(
+                    self._config(
+                        "",
+                        gemini_key,
+                    )
+                )
+
+                await self.manager.register(
+                    "gemini",
+                    provider,
+                    priority=15,
+                )
+
+            except Exception as exc:
+                logger.warning(
+                    "Gemini provider failed: %s",
+                    exc,
+                )
 
         openrouter_key = self.config_manager.get_key(
             "openrouter"

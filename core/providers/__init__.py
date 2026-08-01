@@ -26,6 +26,7 @@ from .openai_provider import OpenAIProvider
 from .anthropic_provider import AnthropicProvider
 
 from .openrouter_provider import OpenRouterProvider
+from .gemini_provider import GeminiProvider
 
 from .ollama_provider import OllamaProvider
 
@@ -56,6 +57,7 @@ __all__ = [
     "OpenAIProvider",
     "AnthropicProvider",
     "OpenRouterProvider",
+    "GeminiProvider",
     "OllamaProvider",
     "VLLMProvider",
     "LocalProvider",

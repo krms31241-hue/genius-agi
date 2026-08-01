@@ -90,9 +90,20 @@ class AIRouter:
 
         candidates = self.registry.best_for(task)
 
+        # Keep only models whose providers are running
+        available_providers = set(
+            self.provider_manager.list_providers()
+        )
+
+        candidates = [
+            m
+            for m in candidates
+            if m.provider.value in available_providers
+        ]
+
         if not candidates:
             raise RuntimeError(
-                f"No model available for task: {task}"
+                f"No available model/provider for task: {task}"
             )
 
         model = candidates[0]

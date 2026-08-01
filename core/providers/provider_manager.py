@@ -172,13 +172,23 @@ class ProviderManager:
         """
 
         if provider:
+            try:
+                return await self.providers[
+                    provider
+                ].generate(
+                    prompt,
+                    **kwargs,
+                )
 
-            return await self.providers[
-                provider
-            ].generate(
-                prompt,
-                **kwargs,
-            )
+            except Exception as exc:
+                logger.warning(
+                    "Selected provider %s failed: %s",
+                    provider,
+                    exc,
+                )
+                
+                # fallback to other providers
+                last_error = exc
 
 
         last_error = None

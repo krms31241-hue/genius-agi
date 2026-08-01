@@ -6,7 +6,7 @@ Core abstraction for every Genius provider.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Any, AsyncIterator
 
 
@@ -102,17 +102,15 @@ class ProviderResponse:
 @dataclass(slots=True)
 class ProviderCapabilities:
     supports_streaming: bool = False
-
     supports_embeddings: bool = False
-
     supports_functions: bool = False
 
     max_context_tokens: int = 0
-
     max_completion_tokens: int = 0
-
     supported_models: list[str] = field(default_factory=list)
 
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 # ==========================================================
 # Abstract Provider
@@ -168,6 +166,17 @@ class ProviderBase(ABC):
 
         if not self.config.model_name:
             raise ConfigurationError("Missing model_name")
+
+    def _prepare_prompt(self, prompt: str) -> str:
+        return prompt
+
+    def _merge_kwargs(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "temperature": kwargs.get("temperature", self.config.temperature),
+            "top_p": kwargs.get("top_p", self.config.top_p),
+            "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
+            "stop": kwargs.get("stop", self.config.stop),
+        }
 
     async def get_capabilities(self) -> ProviderCapabilities:
         return self._capabilities
