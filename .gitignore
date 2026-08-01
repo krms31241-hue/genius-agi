@@ -13,3 +13,11 @@ providers_dump.txt
 # Local backups
 core/providers_backup/
 *.backup
+
+# Local runtime data
+memory_core.db
+*.bak
+
+# Python cache
+__pycache__/
+*.pyc
