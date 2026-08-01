@@ -6,7 +6,10 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .lab_backups/
-core
 *.log
 providers_dump.txt
 .env
+
+# Local backups
+core/providers_backup/
+*.backup
