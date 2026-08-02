@@ -1,6 +1,6 @@
 {
   "patch_id": "test_safe",
-  "timestamp": 1785515576.719871,
+  "timestamp": 1785678459.63512,
   "passed": true,
   "scores": {
     "confidence": 100.0,
@@ -10,13 +10,21 @@
     "maintainability": 100.0
   },
   "sandbox": {
-    "success": true,
-    "exit_code": 0,
     "stdout": "ok\n",
     "stderr": "",
-    "duration": 0.09071135520935059,
-    "memory_mb": 0.0,
-    "cpu_sec": 0.09071135520935059
+    "exit_code": 0,
+    "duration": 0.10483200001181103,
+    "timed_out": false,
+    "killed": false,
+    "peak_memory_bytes": 913408,
+    "peak_cpu_percent": 0.0,
+    "truncated": false,
+    "pid": 9443,
+    "command": [
+      "/data/data/com.termux/files/usr/bin/python",
+      "/data/data/com.termux/files/usr/tmp/tmphd592n7u/main.py"
+    ],
+    "success": true
   },
   "analyzers": [
     {
@@ -80,5 +88,5 @@
       "analyzer": "regression"
     }
   ],
-  "snap_id": "snap_1785515576"
+  "snap_id": "snap_1785678459"
 }

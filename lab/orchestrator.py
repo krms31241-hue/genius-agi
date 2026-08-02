@@ -50,7 +50,11 @@ class CodeLaboratory:
                         return {"analyzer_results": analyzer_results, "sandbox_result": None, "early_exit": True}
 
                 sandbox_res = self.sandbox.execute(patch_files, entrypoint)
-                return {"analyzer_results": analyzer_results, "sandbox_result": sandbox_res.to_dict(), "early_exit": False}
+                return {
+                    "analyzer_results": analyzer_results,
+                    "sandbox_result": sandbox_res,
+                    "early_exit": False,
+                }
 
             result = self.watchdog.run(_pipeline)
 

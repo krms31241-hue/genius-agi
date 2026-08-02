@@ -1,0 +1,9 @@
+{
+  "accepted": true,
+  "mode": "balanced",
+  "custom": {
+    "cpu": 35.0,
+    "memory": 30.0,
+    "disk": 20.0
+  }
+}

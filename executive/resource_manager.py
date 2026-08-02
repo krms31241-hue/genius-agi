@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from executive.user_consent import UserConsentManager
 from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class ResourceManager:
             
         # Load persisted state
         self._load_state()
+        self.user_consent = UserConsentManager()
 
     def _load_state(self):
         if os.path.exists(self.state_path):
@@ -129,3 +131,67 @@ class ResourceManager:
             )
 
         return recommendations
+
+    def get_resource_policy(self, mode="balanced"):
+        from executive.resource_policy import ResourcePolicy, ResourceMode
+
+        mode = mode.lower()
+
+        mapping = {
+            "eco": ResourceMode.ECO,
+            "balanced": ResourceMode.BALANCED,
+            "performance": ResourceMode.PERFORMANCE,
+        }
+
+        return ResourcePolicy(mapping.get(mode, ResourceMode.BALANCED))
+
+    def evaluate_resources(self, mode=None):
+        """
+        Returns a real-time scheduling decision.
+        """
+        if mode is None:
+            mode = self.get_current_mode()
+        policy = self.get_resource_policy(mode)
+        system = self.get_system_resources()
+        return policy.evaluate(system)
+
+    def can_schedule(self, mode="balanced"):
+        return self.evaluate_resources(mode)["allow_new_tasks"]
+
+    def requires_user_permission(self, mode="balanced"):
+        policy = self.get_resource_policy(mode)
+        system = self.get_system_resources()
+        return policy.should_request_user_permission(system)
+
+
+
+    def get_current_mode(self):
+        return self.user_consent.mode()
+
+
+
+    def get_effective_limits(self):
+        """
+        Returns actual resource limits based on user consent mode.
+        """
+        mode = self.get_current_mode()
+
+        limits = {
+            "eco": {
+                "cpu": 30,
+                "memory": 30,
+                "disk": 20,
+            },
+            "balanced": {
+                "cpu": 60,
+                "memory": 60,
+                "disk": 50,
+            },
+            "performance": {
+                "cpu": 90,
+                "memory": 90,
+                "disk": 90,
+            },
+        }
+
+        return limits.get(mode, limits["balanced"])

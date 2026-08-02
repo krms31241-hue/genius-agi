@@ -55,7 +55,12 @@ class SystemResourceDetector:
             "current_cpu_usage_percent": 0.0
         }
 
-        if HAS_PSUTIL:
+        is_android = (
+            platform.system() == "Android"
+            or "android" in platform.release().lower()
+        )
+
+        if HAS_PSUTIL and not is_android:
             try:
                 cpu_info["physical_cores"] = psutil.cpu_count(logical=False) or 0
                 cpu_info["logical_cores"] = psutil.cpu_count(logical=True) or 0
@@ -245,10 +250,16 @@ class SystemResourceDetector:
 
     def _detect_disk(self) -> dict:
         disk_info = {"total": 0, "free": 0, "used": 0, "percent": 0.0}
-        path = '/' if platform.system() != 'Windows' else 'C:\\'
+        if platform.system() == "Windows":
+            path = "C:\\"
+        else:
+            path = str(Path.home())
         
         if HAS_PSUTIL:
             try:
+                real_path = str(Path.home())
+                if os.path.exists(real_path):
+                    path = real_path
                 usage = psutil.disk_usage(path)
                 disk_info.update({
                     "total": usage.total,
