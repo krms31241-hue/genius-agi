@@ -208,7 +208,26 @@ async function processMessage(input) {
   const consciousnessDelay = s.attention.depth * 100;
   await new Promise(r => setTimeout(r, baseDelay + Math.random() * 700 + consciousnessDelay));
 
-  let response = await generateResponse(input);
+  let response;
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: input
+      })
+    });
+
+    const data = await res.json();
+    response = data.response;
+
+  } catch (error) {
+    console.error("Backend error:", error);
+    response = await generateResponse(input);
+  }
   response = selfCorrect(response, input);
   response = injectConsciousness(response, userEmotion);
 

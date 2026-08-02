@@ -108,11 +108,14 @@ class GeminiProvider(ProviderBase):
         attempts = len(self.api_keys)
         last_error = None
 
-        model_name = kwargs.pop("model", None)
+        model_name = (
+            kwargs.pop("model", None)
+            or self.config.model_name
+        )
 
         if not model_name:
             raise ProviderError(
-                "Gemini model was not selected by router"
+                "No Gemini model configured"
             )
 
         params = self._merge_kwargs(kwargs)

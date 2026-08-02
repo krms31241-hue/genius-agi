@@ -163,7 +163,10 @@ class ProvidersBootstrap:
             try:
                 provider = GeminiProvider(
                     self._config(
-                        "",
+                        os.getenv(
+                            "GEMINI_MODEL",
+                            "gemini-2.5-flash",
+                        ),
                         gemini_key,
                     )
                 )
