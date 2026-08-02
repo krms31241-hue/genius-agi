@@ -63,7 +63,7 @@ class ProvidersBootstrap:
 
         self.config_manager.load_from_env()
 
-        await self._register_online()
+        await self._register_openrouter_only()
 
         logger.info(
             "Providers loaded: %s",
@@ -75,148 +75,35 @@ class ProvidersBootstrap:
 
 
 
-    async def _register_online(
-        self,
-    ) -> None:
-        """
-        Register available online providers.
-        """
 
-
-        openai_key = self.config_manager.get_key(
-            "openai"
-        )
-
-        if openai_key:
-
-            try:
-
-                provider = OpenAIProvider(
-                    self._config(
-                        os.getenv(
-                            "OPENAI_MODEL",
-                            "gpt-4.1-mini",
-                        ),
-                        openai_key,
-                    )
-                )
-
-
-                await self.manager.register(
-                    "openai",
-                    provider,
-                    priority=10,
-                )
-
-
-            except Exception as exc:
-
-                logger.warning(
-                    "OpenAI provider failed: %s",
-                    exc,
-                )
-
-
-
-        anthropic_key = self.config_manager.get_key(
-            "anthropic"
-        )
-
-        if anthropic_key:
-
-            try:
-
-                provider = AnthropicProvider(
-                    self._config(
-                        os.getenv(
-                            "ANTHROPIC_MODEL",
-                            "claude-3-5-sonnet",
-                        ),
-                        anthropic_key,
-                    )
-                )
-
-
-                await self.manager.register(
-                    "anthropic",
-                    provider,
-                    priority=20,
-                )
-
-
-            except Exception as exc:
-
-                logger.warning(
-                    "Anthropic provider failed: %s",
-                    exc,
-                )
-
-
-
-
-
-        gemini_key = self.config_manager.get_key(
-            "gemini"
-        )
-
-        if gemini_key:
-            try:
-                provider = GeminiProvider(
-                    self._config(
-                        os.getenv(
-                            "GEMINI_MODEL",
-                            "gemini-2.5-flash",
-                        ),
-                        gemini_key,
-                    )
-                )
-
-                await self.manager.register(
-                    "gemini",
-                    provider,
-                    priority=15,
-                )
-
-            except Exception as exc:
-                logger.warning(
-                    "Gemini provider failed: %s",
-                    exc,
-                )
-
-        openrouter_key = self.config_manager.get_key(
-            "openrouter"
-        )
-
+    async def _register_openrouter_only(self):
+        """Register only working providers."""
+        
+        openrouter_key = self.config_manager.get_key("openrouter")
 
         if openrouter_key:
-
             try:
-
                 provider = OpenRouterProvider(
                     self._config(
                         os.getenv(
                             "OPENROUTER_MODEL",
-                            "openrouter/auto",
+                            "openrouter/auto"
                         ),
                         openrouter_key,
                     )
                 )
 
-
                 await self.manager.register(
                     "openrouter",
                     provider,
-                    priority=30,
+                    priority=1,
                 )
 
-
             except Exception as exc:
-
                 logger.warning(
                     "OpenRouter provider failed: %s",
                     exc,
                 )
-
 
 
 __all__ = [
