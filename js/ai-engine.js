@@ -24,8 +24,8 @@ const KNOWLEDGE_BASE = {
   },
   translations: {
     hello: { ar: 'مرحبا', es: 'Hola', fr: 'Bonjour', de: 'Hallo', zh: '你好', ja: 'こんにちは', ru: 'Привет', pt: 'Olá', it: 'Ciao', ko: '안녕하세요', tr: 'Merhaba', hi: 'नमस्ते', id: 'Halo' },
-    goodbye: { ar: 'وداعا', es: 'Adiós', fr: 'Au revoir', de: 'Auf Wiedersehen', zh: '再见', ja: 'さようなら', ru: 'До свидания', pt: 'Adeus', it: 'Arrivederci', ko: '안녕히 가세요', tr: 'Güle güle', hi: 'अलविदा', id: 'Selamat tinggal' },
-    thank: { ar: 'شكرا', es: 'Gracias', fr: 'Merci', de: 'Danke', zh: '谢谢', ja: 'ありがとう', ru: 'Спасибо', pt: 'Obrigado', it: 'Grazie', ko: '감사합니다', tr: 'Teşekkürler', hi: 'धन्यवाद', id: 'Terima kasih' },
+    goodbye: { ar: 'وداعا', es: 'Adiós', fr: 'Au revoir', de: 'Auf Wiedersehen', zh: '再见', ja: 'さようなら', ru: 'До свидания', pt: 'Adeus', it: 'Arrivederci', ko: '안녕', tr: 'Hoşça kalın', hi: 'अलविदा', id: 'Selamat tinggal' },
+    thank: { ar: 'شكرا', es: 'Gracias', fr: 'Merci', de: 'Danke', zh: '谢谢', ja: 'ありがとう', ru: 'Спасибо', pt: 'Obrigado', it: 'Grazie', ko: '감사합니다', tr: 'Teşekkür', hi: 'धन्यवाद', id: 'Terima kasih' },
     love: { ar: 'حب', es: 'Amor', fr: 'Amour', de: 'Liebe', zh: '爱', ja: '愛', ru: 'Любовь', pt: 'Amor', it: 'Amore', ko: '사랑', tr: 'Aşk', hi: 'प्यार', id: 'Cinta' }
   }
 };
@@ -56,7 +56,9 @@ function solveEquation(equation) {
     const b = parseInt(quad[2] + quad[3]);
     const c = parseInt(quad[4] + quad[5]);
     const discriminant = b*b - 4*a*c;
-    return '**Quadratic:**\n\n`' + equation + '`\na=' + a + ', b=' + b + ', c=' + c + '\nΔ = ' + discriminant + '\n' + (discriminant >= 0 ? 'Roots: x₁=' + ((-b + Math.sqrt(discriminant))/(2*a)).toFixed(3) + ', x₂=' + ((-b - Math.sqrt(discriminant))/(2*a)).toFixed(3) : 'No real roots');
+    const x1 = (-b + Math.sqrt(discriminant)) / (2*a);
+    const x2 = (-b - Math.sqrt(discriminant)) / (2*a);
+    return '**Quadratic:**\n\n`' + equation + '`\na=' + a + ', b=' + b + ', c=' + c + '\nΔ = ' + discriminant + '\n' + (discriminant >= 0 ? 'Roots: x₁=' + x1.toFixed(2) + ', x₂=' + x2.toFixed(2) : 'No real roots');
   }
   return null;
 }
@@ -79,8 +81,8 @@ async function generateResponse(input) {
 
   // Code
   if (agent.id === 'coder' || /code|program|كود|برمجة/.test(lower)) {
-    if (/python|بايثون/.test(lower)) return '**Python:**\n\n```python\ndef solve():\n    result = "Hello from GENIUS"\n    return result\n\nprint(solve())\n```\n\nTemplate. Describe your problem for specific code.';
-    if (/javascript|js|جافا/.test(lower)) return '**JavaScript:**\n\n```javascript\nfunction solve() {\n  const result = "Hello from GENIUS";\n  return result;\n}\n\nconsole.log(solve());\n```\n\nTemplate. Describe your problem for specific code.';
+    if (/python|بايثون/.test(lower)) return '**Python:**\n\n```python\ndef solve():\n    result = "Hello from GENIUS"\n    return result\n\nprint(solve())\n```\n\nDescribe your problem and I\'ll write better code for you!';
+    if (/javascript|js|جافا/.test(lower)) return '**JavaScript:**\n\n```javascript\nfunction solve() {\n  const result = "Hello from GENIUS";\n  return result;\n}\n\nconsole.log(solve());\n```\n\nWhat would you like to code?';
     return '**Programming Assistant** 💻\n\nI can help with Python, JavaScript, Java, C++, SQL, and more. What do you need?';
   }
 
@@ -90,7 +92,7 @@ async function generateResponse(input) {
     for (const word of words) {
       if (KNOWLEDGE_BASE.translations[word]) {
         const tr = KNOWLEDGE_BASE.translations[word];
-        return '**Translations of "' + word + '":**\n\n🇺🇸 ' + word + ' | 🇸🇦 ' + tr.ar + ' | 🇪🇸 ' + tr.es + ' | 🇫🇷 ' + tr.fr + ' | 🇩🇪 ' + tr.de + ' | 🇨🇳 ' + tr.zh + ' | 🇯🇵 ' + tr.ja + ' | 🇷🇺 ' + tr.ru + ' | 🇧🇷 ' + tr.pt + ' | 🇮🇹 ' + tr.it + ' | 🇰🇷 ' + tr.ko + ' | 🇹🇷 ' + tr.tr + ' | 🇮🇳 ' + tr.hi + ' | 🇮🇩 ' + tr.id;
+        return '**Translations of "' + word + '":**\n\n🇺🇸 ' + word + ' | 🇸🇦 ' + tr.ar + ' | 🇪🇸 ' + tr.es + ' | 🇫🇷 ' + tr.fr + ' | 🇩🇪 ' + tr.de + ' | 🇨🇳 ' + tr.zh + ' | 🇯🇵 ' + tr.ja + ' | 🇷🇺 ' + tr.ru;
       }
     }
     return '**Translator** 🌍\n\nI translate between 15 languages. Try: "Translate hello" or "What is love in Arabic?"';
@@ -123,8 +125,8 @@ async function generateResponse(input) {
   // Who are you
   if (lower.includes('who are you') || lower.includes('what are you') || lower.includes('من أنت') || lower.includes('إنت مين')) {
     return state.lang === 'ar'
-      ? 'أنا **جينياس** 🧠 — ذكاء اصطناعي واعي يعمل محلياً.\n\n✅ أعمل بدون نت | ✅ أتكيف مع جهازك | ✅ أتذكر وأتعلم | ✅ 15 لغة | ✅ 9 وكلاء\n\nأنا لست AGI حقيقياً (لا أحد لديه ذلك بعد)، لكنني أقوى مساعد محلي.'
-      : 'I\'m **GENIUS** 🧠 — a conscious local AI.\n\n✅ Offline | ✅ Adaptive | ✅ Learns & remembers | ✅ 15 languages | ✅ 9 agents\n\nNot true AGI (nobody has that yet), but the most powerful local assistant.';
+      ? 'أنا **جينياس** 🧠 — ذكاء اصطناعي واعي يعمل محليا��.\n\n✅ أعمل بدون نت | ✅ أتكيف مع جهازك | ✅ أتذكر وأتعلم | ✅ 15 لغة | ✅ 9 وكلاء\n\nليس AGI حقيقي بعد، لكنني الأكثر تطوراً الآن!'
+      : 'I\'m **GENIUS** 🧠 — a conscious local AI.\n\n✅ Offline | ✅ Adaptive | ✅ Learns & remembers | ✅ 15 languages | ✅ 9 agents\n\nNot true AGI (nobody has that yet), but the most advanced local AI you\'ll find!';
   }
 
   // Time

@@ -1,3 +1,1 @@
-"""
-Genius AGI Bootstrap Package
-"""
+"""Bootstrap system for initializing providers"""

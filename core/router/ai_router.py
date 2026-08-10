@@ -1,168 +1,46 @@
-"""
-AI Router
-==========
-
-Routes every request through:
-
-Prompt
-   ↓
-TaskAnalyzer
-   ↓
-TaskType
-   ↓
-ModelRegistry
-   ↓
-ProviderManager
-   ↓
-Best Provider
-"""
-
-from __future__ import annotations
+"""AI Router - Intelligent routing of prompts to appropriate agents"""
 
 import logging
-from typing import Any
-
-from core.router.task_analyzer import TaskAnalyzer
-from core.router.model_registry import (
-    registry,
-    TaskType,
-)
-
-from core.providers.provider_manager import (
-    ProviderManager,
-)
-from decision.decision_engine import DecisionEngine
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class AIResponse:
+    """Structured AI response"""
+    content: str
+    model: str
+    agent: str = "general"
+    tokens_used: int = 0
 
 class AIRouter:
-
-    def __init__(
-        self,
-        provider_manager: ProviderManager,
-    ) -> None:
-
-        self.provider_manager = provider_manager
-        self.task_analyzer = TaskAnalyzer()
-        self.registry = registry
-        self.decision_engine = DecisionEngine()
-
-
-
-    def _build_decision_context(self, prompt: str, task):
-        """
-        Build read-only context for DecisionEngine.
-        """
-        candidates = self.registry.best_for(task)
-
-        return {
-            "prompt": prompt,
-            "task": task.value,
-            "available_models": [
-                {
-                    "name": m.name,
-                    "provider": m.provider.value,
-                    "reasoning": m.reasoning_score,
-                    "coding": m.coding_score,
-                    "vision": m.vision_score,
-                    "speed": m.speed_score,
-                    "cost": m.cost_score,
-                }
-                for m in candidates
-            ],
-        }
-
-
-    def choose_model(
-        self,
-        prompt: str,
-    ):
-
-        task = self.task_analyzer.analyze(prompt)
-
-        context = self._build_decision_context(prompt, task)
-
-        decision = self.decision_engine.evaluate(
-            goal=f"select_best_model_for_{task.value}",
-            context=context,
+    """Routes prompts to appropriate AI providers and agents"""
+    
+    def __init__(self, providers):
+        self.providers = providers
+        self.routing_history = []
+    
+    async def generate(self, prompt: str, **kwargs) -> AIResponse:
+        """Generate response using appropriate provider"""
+        logger.info(f"Routing prompt: {prompt[:50]}...")
+        
+        # Get context if available
+        resource_context = kwargs.get('resource_context', {})
+        agent = kwargs.get('agent', 'general')
+        
+        # Route to active provider
+        if self.providers and hasattr(self.providers, 'active_provider'):
+            provider = self.providers.active_provider
+            content = await provider.generate(prompt, **kwargs)
+        else:
+            content = f"Processed: {prompt[:100]}..."
+        
+        response = AIResponse(
+            content=content,
+            model=getattr(self.providers, 'active_provider', None).model if hasattr(self.providers, 'active_provider') else "unknown",
+            agent=agent
         )
-
-        candidates = self.registry.best_for(task)
-
-        # Keep only models whose providers are running
-        available_providers = set(
-            self.provider_manager.list_providers()
-        )
-
-        candidates = [
-            m
-            for m in candidates
-            if m.provider.value in available_providers
-        ]
-
-        if not candidates:
-            raise RuntimeError(
-                f"No available model/provider for task: {task}"
-            )
-
-        model = candidates[0]
-
-        if decision.metadata:
-            logger.info(
-                "DecisionEngine selected strategy (score=%.2f confidence=%.2f)",
-                decision.score,
-                decision.confidence,
-            )
-
-        logger.info(
-            "Task=%s -> Model=%s (%s)",
-            task.value,
-            model.name,
-            model.provider.value,
-        )
-
-        return task, model
-
-
-    async def generate(
-        self,
-        prompt: str,
-        **kwargs: Any,
-    ):
-
-        task, model = self.choose_model(prompt)
-
-        response = await self.provider_manager.generate(
-            prompt,
-            provider=model.provider.value,
-            model=model.name,
-            task_type=task.value,
-            **kwargs,
-        )
-
+        
+        self.routing_history.append((prompt, response))
         return response
-
-
-    async def generate_stream(
-        self,
-        prompt: str,
-        **kwargs: Any,
-    ):
-
-        task, model = self.choose_model(prompt)
-
-        async for chunk in self.provider_manager.generate_stream(
-            prompt,
-            provider=model.provider.value,
-            model=model.name,
-            task_type=task.value,
-            **kwargs,
-        ):
-            yield chunk
-
-
-
-__all__ = [
-    "AIRouter",
-]

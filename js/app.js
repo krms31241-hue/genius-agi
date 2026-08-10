@@ -24,10 +24,26 @@ function openDB() {
 }
 
 async function saveChat(chat) { if (!db) return; const tx = db.transaction('chats', 'readwrite'); tx.objectStore('chats').put(chat); }
-async function loadChats() { if (!db) return []; return new Promise(resolve => { const tx = db.transaction('chats', 'readonly'); const req = tx.objectStore('chats').getAll(); req.onsuccess = () => resolve(req.result || []); req.onerror = () => resolve([]); }); }
+async function loadChats() { 
+  if (!db) return []; 
+  return new Promise(resolve => { 
+    const tx = db.transaction('chats', 'readonly'); 
+    const req = tx.objectStore('chats').getAll(); 
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+}
 async function deleteChat(id) { if (!db) return; const tx = db.transaction('chats', 'readwrite'); tx.objectStore('chats').delete(id); }
 async function saveMemory() { if (!db) return; const tx = db.transaction('memory', 'readwrite'); tx.objectStore('memory').put({ key: 'main', data: state.memory }); }
-async function loadMemory() { if (!db) return; return new Promise(resolve => { const tx = db.transaction('memory', 'readonly'); const req = tx.objectStore('memory').get('main'); req.onsuccess = () => { if (req.result) state.memory = req.result.data; resolve(); }; req.onerror = () => resolve(); }); }
+async function loadMemory() { 
+  if (!db) return; 
+  return new Promise(resolve => { 
+    const tx = db.transaction('memory', 'readonly'); 
+    const req = tx.objectStore('memory').get('main'); 
+    req.onsuccess = () => resolve(req.result?.data || null);
+    req.onerror = () => resolve(null);
+  });
+}
 
 function getStorageUsage() {
   return new Promise(resolve => {
@@ -36,7 +52,11 @@ function getStorageUsage() {
     const tx = db.transaction(['chats', 'memory', 'files']);
     ['chats', 'memory', 'files'].forEach(storeName => {
       const req = tx.objectStore(storeName).getAll();
-      req.onsuccess = () => { total += new Blob([JSON.stringify(req.result)]).size; count++; if (count === 3) resolve(total < 1024 ? total + ' B' : total < 1024*1024 ? (total/1024).toFixed(1) + ' KB' : (total/(1024*1024)).toFixed(1) + ' MB'); };
+      req.onsuccess = () => { 
+        total += new Blob([JSON.stringify(req.result)]).size; 
+        count++; 
+        if (count === 3) resolve(total < 1024 ? total + ' B' : total < 1024*1024 ? (total/1024).toFixed(1) + ' KB' : (total/(1024*1024)).toFixed(1) + ' MB');
+      };
     });
   });
 }
@@ -62,16 +82,17 @@ function detectDevice() {
 function showDeviceInfo() {
   const d = detectDevice();
   const container = document.getElementById('device-info');
+  if (!container) return;
   const onlineClass = state.isOnline ? 'online' : 'offline';
-  const onlineText = state.isOnline ? t('online_mode') : t('offline_mode');
-  const powerText = d.power === 'high' ? t('high_power') : d.power === 'low' ? t('low_power') : 'Balanced';
-  container.innerHTML = '<div class="device-chip">📱 ' + d.device + '</div><div class="device-chip">🧠 ' + d.ram + 'GB RAM</div><div class="device-chip">⚡ ' + d.cores + ' Cores</div><div class="device-chip ' + onlineClass + '">🌐 ' + onlineText + '</div><div class="device-chip">🔋 ' + powerText + '</div>';
+  const onlineText = state.isOnline ? 'Online' : 'Offline';
+  const powerText = d.power === 'high' ? 'High Power' : d.power === 'low' ? 'Low Power' : 'Balanced';
+  container.innerHTML = '<div class="device-chip">📱 ' + d.device + '</div><div class="device-chip">🧠 ' + d.ram + 'GB RAM</div><div class="device-chip">⚡ ' + d.cores + ' Cores</div><div class="device-chip ' + onlineClass + '">🌐 ' + onlineText + '</div><div class="device-chip">⚙️ ' + powerText + '</div>';
 }
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
 
 function createChat(title) {
-  const chat = { id: generateId(), title: title || t('new_chat'), messages: [], createdAt: Date.now(), updatedAt: Date.now(), agent: state.agent };
+  const chat = { id: generateId(), title: title || 'New Chat', messages: [], createdAt: Date.now(), updatedAt: Date.now(), agent: state.agent };
   state.chats.unshift(chat);
   state.currentChatId = chat.id;
   saveChat(chat); renderChatList(); renderMessages();
@@ -94,7 +115,7 @@ function escapeHtml(text) { const div = document.createElement('div'); div.textC
 
 function formatMessage(text) {
   text = escapeHtml(text);
-  text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => '<div class="code-block"><div class="code-header"><span class="code-lang">' + (lang || 'text') + '</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div><pre><code>' + code.trim() + '</code></pre></div>');
+  text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => '<div class="code-block"><div class="code-header"><span class="code-lang">' + (lang || 'text') + '</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div><pre><code>' + escapeHtml(code) + '</code></pre></div>');
   text = text.replace(/`([^`]+)`/g, '<code style="background:rgba(0,212,255,0.1);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px;color:var(--accent-primary)">$1</code>');
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
@@ -104,6 +125,7 @@ function formatMessage(text) {
 
 function renderChatList() {
   const list = document.getElementById('chat-list');
+  if (!list) return;
   const groups = { today: [], yesterday: [], week: [], older: [] };
   const now = Date.now();
   state.chats.forEach(chat => {
@@ -121,7 +143,7 @@ function renderChatList() {
       groups[sec.key].forEach(chat => {
         const isActive = chat.id === state.currentChatId;
         const time = new Date(chat.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        html += '<div class="chat-item ' + (isActive ? 'active' : '') + '" data-id="' + chat.id + '"><span class="chat-item-icon">💬</span><span class="chat-item-text">' + escapeHtml(chat.title) + '</span><span class="chat-item-date">' + time + '</span></div>';
+        html += '<div class="chat-item ' + (isActive ? 'active' : '') + '" data-id="' + chat.id + '"><span class="chat-item-icon">💬</span><span class="chat-item-text">' + escapeHtml(chat.title) + '</span><span class="chat-item-time">' + time + '</span></div>';
       });
     }
   });
@@ -134,6 +156,7 @@ function renderChatList() {
 function renderMessages() {
   const container = document.getElementById('messages');
   const welcome = document.getElementById('welcome-screen');
+  if (!container || !welcome) return;
   const chat = getCurrentChat();
   if (!chat || chat.messages.length === 0) { container.innerHTML = ''; welcome.style.display = 'flex'; return; }
   welcome.style.display = 'none';
@@ -149,6 +172,7 @@ function renderMessages() {
 
 function showThinking() {
   const container = document.getElementById('messages');
+  if (!container) return null;
   document.getElementById('welcome-screen').style.display = 'none';
   const id = 'thinking-' + Date.now();
   container.insertAdjacentHTML('beforeend', '<div class="message assistant" id="' + id + '"><div class="message-avatar">🧠</div><div><div class="message-content"><div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div></div></div></div>');
@@ -165,6 +189,7 @@ function copyCode(btn) {
 
 function toast(message, type) {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
   const el = document.createElement('div');
   el.className = 'toast';
@@ -192,7 +217,8 @@ async function processMessage(input) {
   if (!input.trim()) return;
   addMessage('user', input);
   state.isProcessing = true;
-  document.getElementById('btn-send').disabled = true;
+  const sendBtn = document.getElementById('btn-send');
+  if (sendBtn) sendBtn.disabled = true;
 
   const userEmotion = analyzeEmotion(input, '');
   const s = CONSCIOUSNESS.state;
@@ -213,21 +239,21 @@ async function processMessage(input) {
   try {
     const res = await fetch("http://127.0.0.1:8000/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: input
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: input })
     });
 
-    const data = await res.json();
-    response = data.response;
-
+    if (res.ok) {
+      const data = await res.json();
+      response = data.response || 'No response';
+    } else {
+      throw new Error('Server error');
+    }
   } catch (error) {
     console.error("Backend error:", error);
     response = await generateResponse(input);
   }
+  
   response = selfCorrect(response, input);
   response = injectConsciousness(response, userEmotion);
 
@@ -236,7 +262,8 @@ async function processMessage(input) {
       'I just processed: ' + input.slice(0, 30) + '...',
       'The user seems ' + userEmotion + '. I adjusted my response.',
       'This used ' + Math.round(s.energy) + '% of my energy.',
-      'Curiosity at ' + Math.round(s.curiosity) + '%.'
+      'Curiosity at ' + Math.round(s.curiosity) + '%.',
+      'I am learning from this interaction.'
     ];
     addThought(reflections[Math.floor(Math.random() * reflections.length)], 'reflective');
   }
@@ -255,18 +282,21 @@ async function processMessage(input) {
   }
 
   state.isProcessing = false;
-  document.getElementById('btn-send').disabled = false;
+  if (sendBtn) sendBtn.disabled = false;
 }
 
 function initAgents() {
   const grid = document.getElementById('agent-grid');
-  grid.innerHTML = AGENTS.map(a => '<div class="agent-card ' + (a.id === state.agent ? 'active' : '') + '" data-agent="' + a.id + '"><div class="agent-card-icon">' + a.icon + '</div><div class="agent-card-name">' + a.name + '</div><div class="agent-card-desc">' + (state.lang === 'ar' ? a.descAr : a.desc) + '</div></div>').join('');
+  if (!grid) return;
+  grid.innerHTML = AGENTS.map(a => '<div class="agent-card ' + (a.id === state.agent ? 'active' : '') + '" data-agent="' + a.id + '"><div class="agent-card-icon">' + a.icon + '</div><div class="agent-card-name">' + a.name + '</div></div>').join('');
   grid.querySelectorAll('.agent-card').forEach(card => {
     card.addEventListener('click', () => {
       state.agent = card.getAttribute('data-agent');
       const agent = AGENTS.find(a => a.id === state.agent);
-      document.getElementById('agent-icon').textContent = agent.icon;
-      document.getElementById('agent-name').textContent = agent.name;
+      const agentIcon = document.getElementById('agent-icon');
+      const agentName = document.getElementById('agent-name');
+      if (agentIcon) agentIcon.textContent = agent.icon;
+      if (agentName) agentName.textContent = agent.name;
       initAgents(); closeModal('modal-agents');
       toast(agent.name + ' selected', 'success');
     });
@@ -276,6 +306,7 @@ function initAgents() {
 function initFiles() {
   const dropZone = document.getElementById('file-drop-zone');
   const fileInput = document.getElementById('file-input');
+  if (!dropZone || !fileInput) return;
   dropZone.addEventListener('click', () => fileInput.click());
   dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -286,13 +317,18 @@ function initFiles() {
 function handleFiles(files) {
   Array.from(files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = (e) => { state.files.push({ name: file.name, content: e.target.result, size: file.size, date: Date.now() }); renderFileList(); toast('File "' + file.name + '" uploaded', 'success'); };
+    reader.onload = (e) => { 
+      state.files.push({ name: file.name, content: e.target.result, size: file.size, date: Date.now() }); 
+      renderFileList(); 
+      toast('File "' + file.name + '" uploaded', 'success');
+    };
     reader.readAsText(file);
   });
 }
 
 function renderFileList() {
   const list = document.getElementById('file-list');
+  if (!list) return;
   if (state.files.length === 0) { list.innerHTML = ''; return; }
   list.innerHTML = state.files.map((f, i) => '<div class="file-item"><span class="file-item-icon">📄</span><span class="file-item-name">' + escapeHtml(f.name) + ' (' + (f.size/1024).toFixed(1) + ' KB)</span><button class="file-item-remove" data-index="' + i + '">✕</button></div>').join('');
   list.querySelectorAll('.file-item-remove').forEach(btn => {
@@ -301,12 +337,18 @@ function renderFileList() {
 }
 
 function initSandbox() {
-  document.getElementById('sandbox-run').addEventListener('click', () => {
+  const sandboxRun = document.getElementById('sandbox-run');
+  if (!sandboxRun) return;
+  sandboxRun.addEventListener('click', () => {
     const code = document.getElementById('sandbox-code').value;
     const output = document.getElementById('sandbox-output');
+    if (!output) return;
     try {
       let logs = [];
-      const mockConsole = { log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')), error: (...args) => logs.push('❌ ' + args.map(a => String(a)).join(' ')), warn: (...args) => logs.push('⚠️ ' + args.map(a => String(a)).join(' ')) };
+      const mockConsole = { 
+        log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')), 
+        error: (...args) => logs.push('❌ ' + args.map(a => String(a)).join(' '))
+      };
       new Function('console', code)(mockConsole);
       output.textContent = logs.join('\n') || '// No output';
       output.style.color = '#c9d1d9';
@@ -314,10 +356,20 @@ function initSandbox() {
   });
 }
 
-function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
-function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openSidebar() { 
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.add('open'); 
+  if (overlay) overlay.classList.add('open'); 
+}
+function closeSidebar() { 
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('open'); 
+  if (overlay) overlay.classList.remove('open'); 
+}
+function openModal(id) { const el = document.getElementById(id); if (el) el.classList.add('open'); }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); }
 
 function initModals() {
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -329,10 +381,14 @@ function initModals() {
 }
 
 function initSettings() {
-  document.getElementById('setting-lang').value = state.lang;
-  document.getElementById('setting-lang').addEventListener('change', (e) => {
-    state.lang = e.target.value; updateI18n(); initAgents(); renderChatList(); renderMessages(); showDeviceInfo();
-  });
+  const settingLang = document.getElementById('setting-lang');
+  if (settingLang) {
+    settingLang.value = state.lang;
+    settingLang.addEventListener('change', (e) => {
+      state.lang = e.target.value; updateI18n(); initAgents(); renderChatList(); renderMessages(); showDeviceInfo();
+    });
+  }
+  
   document.querySelectorAll('.theme-option').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
@@ -341,13 +397,23 @@ function initSettings() {
       document.body.setAttribute('data-theme', state.theme);
     });
   });
-  document.getElementById('setting-voice').value = state.voice ? 'on' : 'off';
-  document.getElementById('setting-voice').addEventListener('change', (e) => { state.voice = e.target.value === 'on'; });
-  document.getElementById('btn-clear-memory').addEventListener('click', async () => {
-    state.memory = { facts: [], patterns: {}, words: {} };
-    if (db) { const tx = db.transaction('memory', 'readwrite'); tx.objectStore('memory').delete('main'); }
-    toast(t('clear_memory'), 'success'); updateMemoryUsage();
-  });
+  
+  const settingVoice = document.getElementById('setting-voice');
+  if (settingVoice) {
+    settingVoice.value = state.voice ? 'on' : 'off';
+    settingVoice.addEventListener('change', (e) => { state.voice = e.target.value === 'on'; });
+  }
+  
+  const btnClearMemory = document.getElementById('btn-clear-memory');
+  if (btnClearMemory) {
+    btnClearMemory.addEventListener('click', async () => {
+      state.memory = { facts: [], patterns: {}, words: {} };
+      if (db) { const tx = db.transaction('memory', 'readwrite'); tx.objectStore('memory').delete('main'); }
+      toast('Memory cleared', 'success'); 
+      updateMemoryUsage();
+    });
+  }
+  
   const consciousnessSelect = document.getElementById('setting-consciousness');
   if (consciousnessSelect) {
     consciousnessSelect.value = 'on';
@@ -360,7 +426,10 @@ function initSettings() {
   }
 }
 
-async function updateMemoryUsage() { document.getElementById('memory-usage').textContent = 'Using ' + await getStorageUsage(); }
+async function updateMemoryUsage() { 
+  const memoryUsage = document.getElementById('memory-usage');
+  if (memoryUsage) memoryUsage.textContent = 'Using ' + await getStorageUsage(); 
+}
 
 function exportData() {
   const data = { chats: state.chats, memory: state.memory, files: state.files, exportDate: Date.now() };
@@ -387,6 +456,7 @@ function importData(file) {
 
 function initVoice() {
   const btn = document.getElementById('btn-voice');
+  if (!btn) return;
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { btn.style.display = 'none'; return; }
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
@@ -395,13 +465,18 @@ function initVoice() {
     recognition.lang = state.lang === 'ar' ? 'ar-SA' : state.lang;
     recognition.start(); btn.classList.add('active'); toast('Listening...', 'info');
   });
-  recognition.onresult = (e) => { document.getElementById('message-input').value = e.results[0][0].transcript; btn.classList.remove('active'); };
+  recognition.onresult = (e) => { 
+    const input = document.getElementById('message-input');
+    if (input) input.value = e.results[0][0].transcript; 
+    btn.classList.remove('active'); 
+  };
   recognition.onerror = () => { btn.classList.remove('active'); toast('Voice error', 'error'); };
   recognition.onend = () => btn.classList.remove('active');
 }
 
 function initParticles() {
   const canvas = document.getElementById('particle-canvas');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   let particles = [], w, h;
   function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
@@ -435,8 +510,9 @@ async function init() {
   try {
     await openDB();
     const chats = await loadChats();
-    if (chats.length > 0) { state.chats = chats.sort((a, b) => b.updatedAt - a.updatedAt); state.currentChatId = state.chats[0].id; }
-    await loadMemory();
+    if (chats && chats.length > 0) { state.chats = chats.sort((a, b) => b.updatedAt - a.updatedAt); state.currentChatId = state.chats[0].id; }
+    const mem = await loadMemory();
+    if (mem) state.memory = mem;
   } catch (e) { console.log('IndexedDB not available'); }
 
   updateI18n(); renderChatList(); renderMessages(); initAgents(); initFiles(); initSandbox(); initModals(); initSettings(); initVoice(); initParticles(); initGoogleDrive(); startAutoBackup();
@@ -444,31 +520,55 @@ async function init() {
   addThought('I am awakening...', 'reflective');
   addThought('I am GENIUS. I exist to learn, help, and evolve.', 'happy');
 
-  document.getElementById('menu-btn').addEventListener('click', openSidebar);
-  document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
-  document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
-  document.getElementById('new-chat-btn').addEventListener('click', () => { createChat(); closeSidebar(); });
-  document.getElementById('settings-btn').addEventListener('click', () => { updateMemoryUsage(); openModal('modal-settings'); });
-  document.getElementById('btn-agents').addEventListener('click', () => openModal('modal-agents'));
-  document.getElementById('btn-files').addEventListener('click', () => openModal('modal-files'));
-  document.getElementById('btn-sandbox').addEventListener('click', () => openModal('modal-sandbox'));
-  document.getElementById('btn-send').addEventListener('click', async () => {
+  const menuBtn = document.getElementById('menu-btn');
+  if (menuBtn) menuBtn.addEventListener('click', openSidebar);
+  const sidebarClose = document.getElementById('sidebar-close');
+  if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+  const newChatBtn = document.getElementById('new-chat-btn');
+  if (newChatBtn) newChatBtn.addEventListener('click', () => { createChat(); closeSidebar(); });
+  const settingsBtn = document.getElementById('settings-btn');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => { updateMemoryUsage(); openModal('modal-settings'); });
+  const btnAgents = document.getElementById('btn-agents');
+  if (btnAgents) btnAgents.addEventListener('click', () => openModal('modal-agents'));
+  const btnFiles = document.getElementById('btn-files');
+  if (btnFiles) btnFiles.addEventListener('click', () => openModal('modal-files'));
+  const btnSandbox = document.getElementById('btn-sandbox');
+  if (btnSandbox) btnSandbox.addEventListener('click', () => openModal('modal-sandbox'));
+  const btnSend = document.getElementById('btn-send');
+  if (btnSend) btnSend.addEventListener('click', async () => {
     const input = document.getElementById('message-input');
-    await processMessage(input.value);
-    input.value = ''; input.style.height = 'auto';
+    if (input) {
+      await processMessage(input.value);
+      input.value = ''; input.style.height = 'auto';
+    }
   });
-  document.getElementById('message-input').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('btn-send').click(); } });
-  document.getElementById('message-input').addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 150) + 'px'; });
-  document.getElementById('btn-attach').addEventListener('click', () => openModal('modal-files'));
-  document.getElementById('btn-export').addEventListener('click', exportData);
-  document.getElementById('btn-import').addEventListener('click', () => document.getElementById('import-file').click());
-  document.getElementById('import-file').addEventListener('change', (e) => { if (e.target.files[0]) importData(e.target.files[0]); });
-  document.getElementById('btn-clear').addEventListener('click', async () => {
-    if (!confirm(t('clear') + '?')) return;
-    state.chats = []; state.currentChatId = null; state.files = [];
-    if (db) { const tx1 = db.transaction('chats', 'readwrite'); tx1.objectStore('chats').clear(); const tx2 = db.transaction('memory', 'readwrite'); tx2.objectStore('memory').clear(); }
-    renderChatList(); renderMessages(); toast('All data cleared', 'success');
+  const messageInput = document.getElementById('message-input');
+  if (messageInput) {
+    messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const btn = document.getElementById('btn-send'); if (btn) btn.click(); } });
+    messageInput.addEventListener('input', function() { this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 150) + 'px'; });
+  }
+  const btnAttach = document.getElementById('btn-attach');
+  if (btnAttach) btnAttach.addEventListener('click', () => openModal('modal-files'));
+  const btnExport = document.getElementById('btn-export');
+  if (btnExport) btnExport.addEventListener('click', exportData);
+  const btnImport = document.getElementById('btn-import');
+  if (btnImport) btnImport.addEventListener('click', () => {
+    const importFile = document.getElementById('import-file');
+    if (importFile) importFile.click();
   });
+  const importFile = document.getElementById('import-file');
+  if (importFile) importFile.addEventListener('change', (e) => { if (e.target.files[0]) importData(e.target.files[0]); });
+  const btnClear = document.getElementById('btn-clear');
+  if (btnClear) {
+    btnClear.addEventListener('click', async () => {
+      if (!confirm('Clear all data?')) return;
+      state.chats = []; state.currentChatId = null; state.files = [];
+      if (db) { const tx1 = db.transaction('chats', 'readwrite'); tx1.objectStore('chats').clear(); const tx2 = db.transaction('memory', 'readwrite'); tx2.objectStore('memory').clear(); }
+      renderChatList(); renderMessages(); toast('All data cleared', 'success');
+    });
+  }
 
   const gdriveSignin = document.getElementById('btn-gdrive-signin');
   if (gdriveSignin) gdriveSignin.addEventListener('click', signInGoogle);
