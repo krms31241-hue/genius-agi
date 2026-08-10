@@ -1,128 +1,87 @@
-"""Unified API for the AGI Memory Core."""
-import sqlite3
-import threading
-import os
+"""Memory Manager - Long-term and working memory for AGI"""
+
 import logging
-from typing import Any, Dict, List, Optional
-from .memory_index import MemoryIndex
-from .working_memory import WorkingMemory
-from .episodic_memory import EpisodicMemory
-from .semantic_memory import SemanticMemory
-from .skill_memory import SkillMemory
-from .memory_models import Experience, Fact, Skill
-from .vectorizer import MemoryVectorizer
-from .semantic_search import SemanticSearch
-from .link_graph import MemoryGraph
-from .ranking import MemoryRanker
-from .hybrid_search import HybridSearch
-from .context_recall import ContextRecallEngine
+import json
+from typing import Dict, List, Any, Optional
+from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 class MemoryManager:
-    """Thread-safe, persistent, auto-initializing memory orchestrator.
-    All subsystems must interact with memory exclusively through this manager."""
-    def __init__(self, db_path: str = "memory_core.db"):
-        self.db_path = os.path.abspath(db_path)
-        self.lock = threading.RLock()
-        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.conn.execute("PRAGMA journal_mode=WAL;")
-        self.conn.execute("PRAGMA foreign_keys=ON;")
-
-        # Core Storage
-        self.index = MemoryIndex(self.conn, self.lock)
-        self.working = WorkingMemory(self.conn, self.lock)
-        self.episodic = EpisodicMemory(self.conn, self.lock, self.index)
-        self.semantic = SemanticMemory(self.conn, self.lock, self.index)
-        self.skill = SkillMemory(self.conn, self.lock, self.index)
+    """Manages short-term, long-term, and episodic memory"""
+    
+    def __init__(self, storage_dir: str = "memory_data"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(exist_ok=True)
         
-        # Phase 3: Retrieval & Graph
-        self.vectorizer = MemoryVectorizer()
-        self.graph = MemoryGraph(self.conn, self.lock)
-        self.ranker = MemoryRanker()
-        self.semantic_search = SemanticSearch(self.vectorizer)
-        self.hybrid_search = HybridSearch(self.vectorizer, self.ranker)
-        self.context_recall = ContextRecallEngine(self.hybrid_search, self.graph)
+        self.working_memory: Dict[str, Any] = {}  # Short-term
+        self.facts: List[Dict] = []  # Long-term facts
+        self.episodes: List[Dict] = []  # Episodic memory
+        self.patterns: Dict[str, int] = {}  # Pattern recognition
         
-        logger.info("MemoryManager initialized at %s", self.db_path)
-
-    def close(self):
-        """Safely close database connection."""
-        with self.lock:
-            try:
-                self.conn.close()
-            except Exception as e:
-                logger.error("MemoryManager close failed: %s", e)
-
-    # Working Memory API
-    def set_working(self, key: str, value: Any, ttl: Optional[float] = None) -> bool:
-        return self.working.set(key, value, ttl)
-
+        self._load_memory()
+    
+    def set_working(self, key: str, value: Any) -> None:
+        """Set working memory (short-term)"""
+        self.working_memory[key] = value
+    
     def get_working(self, key: str) -> Optional[Any]:
-        return self.working.get(key)
-
-    def update_working(self, key: str, value: Any) -> bool:
-        return self.working.update(key, value)
-
-    def clear_working(self) -> bool:
-        return self.working.clear()
-
-    # Episodic Memory API
-    def add_experience(self, experience: Experience) -> bool:
-        return self.episodic.add(experience)
-
-    def search_experiences(self, goal: Optional[str] = None, success: Optional[bool] = None, limit: int = 10) -> List[Experience]:
-        return self.episodic.search(goal, success, limit)
-
-    def recent_experiences(self, limit: int = 10) -> List[Experience]:
-        return self.episodic.recent(limit)
-
-    def get_episodic_stats(self) -> Dict[str, Any]:
-        return self.episodic.statistics()
-
-    # Semantic Memory API
-    def add_fact(self, fact: Fact) -> bool:
-        return self.semantic.add_fact(fact)
-
-    def update_fact(self, fact_id: str, content: Optional[str] = None, confidence: Optional[float] = None) -> bool:
-        return self.semantic.update_fact(fact_id, content, confidence)
-
-    def delete_fact(self, fact_id: str) -> bool:
-        return self.semantic.delete_fact(fact_id)
-
-    def search_facts(self, query: str, tags: Optional[List[str]] = None) -> List[Fact]:
-        return self.semantic.search(query, tags)
-
-    # Skill Memory API
-    def learn_skill(self, skill: Skill) -> bool:
-        return self.skill.learn_skill(skill)
-
-    def get_skill(self, name: str) -> Optional[Skill]:
-        return self.skill.get_skill(name)
-
-    def update_skill(self, name: str, success_rate: Optional[float] = None, times_used: Optional[int] = None) -> bool:
-        return self.skill.update_skill(name, success_rate, times_used)
-
-    def list_skills(self) -> List[Skill]:
-        return self.skill.list_skills()
-
-    # Global Index API
-    def search_index(self, query: str, entity_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        return self.index.search(query, entity_type)
-
-    # Phase 3: Semantic & Hybrid Retrieval API
-    def search_semantic(self, query: str, memories: List[Dict[str, Any]], top_k: int = 5) -> List[Dict[str, Any]]:
-        return [m for m, _ in self.semantic_search.search(query, memories, top_k)]
-
-    def search_hybrid(self, query: str, memories: List[Dict[str, Any]], top_k: int = 10) -> List[Dict[str, Any]]:
-        return self.hybrid_search.search(query, memories, top_k)
-
-    # Phase 3: Graph Linking API
-    def add_memory_link(self, source: str, target: str, relation: str = "related", weight: float = 1.0) -> bool:
-        return self.graph.add_link(source, target, relation, weight)
-
-    def get_related_memories(self, memory_id: str) -> List[Dict[str, Any]]:
-        return self.graph.related(memory_id)
-
-    def get_memory_context(self, query: str, memories: List[Dict[str, Any]], limit: int = 5) -> List[Dict[str, Any]]:
-        return self.context_recall.retrieve_context(query, memories, limit)
+        """Get from working memory"""
+        return self.working_memory.get(key)
+    
+    def add_fact(self, fact: str, metadata: Dict = None) -> None:
+        """Add a fact to long-term memory"""
+        entry = {
+            "fact": fact,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": metadata or {},
+            "importance": 0.5
+        }
+        self.facts.append(entry)
+        if len(self.facts) > 1000:
+            self.facts = self.facts[-1000:]  # Keep last 1000
+    
+    def add_episode(self, prompt: str, response: str, metadata: Dict = None) -> None:
+        """Record an interaction episode"""
+        entry = {
+            "prompt": prompt,
+            "response": response,
+            "timestamp": datetime.now().isoformat(),
+            "metadata": metadata or {}
+        }
+        self.episodes.append(entry)
+        if len(self.episodes) > 500:
+            self.episodes = self.episodes[-500:]
+    
+    def search_facts(self, query: str) -> List[Dict]:
+        """Search facts matching query"""
+        results = []
+        query_lower = query.lower()
+        for fact in self.facts:
+            if query_lower in fact["fact"].lower():
+                results.append(fact)
+        return results[:10]  # Return top 10
+    
+    def record_pattern(self, pattern: str) -> None:
+        """Record a recognized pattern"""
+        self.patterns[pattern] = self.patterns.get(pattern, 0) + 1
+    
+    def _load_memory(self) -> None:
+        """Load memory from disk"""
+        facts_file = self.storage_dir / "facts.json"
+        if facts_file.exists():
+            try:
+                with open(facts_file) as f:
+                    self.facts = json.load(f)
+            except Exception as e:
+                logger.warning(f"Could not load facts: {e}")
+    
+    def close(self) -> None:
+        """Save memory to disk"""
+        facts_file = self.storage_dir / "facts.json"
+        try:
+            with open(facts_file, 'w') as f:
+                json.dump(self.facts, f)
+        except Exception as e:
+            logger.error(f"Could not save facts: {e}")
