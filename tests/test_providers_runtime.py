@@ -12,7 +12,7 @@ class TestProvidersBootstrap(unittest.IsolatedAsyncioTestCase):
         manager = await bootstrap.initialize()
 
         self.assertEqual(len(manager.providers), 1)
-        self.assertEqual(manager.active_provider.name, "local")
-        self.assertEqual(manager.active_provider.model, "genius-local-v1")
+        self.assertEqual(manager.active_provider.name, "local-fallback")
+        self.assertEqual(manager.active_provider.model, "offline-template-v1")
 
         await manager.shutdown()

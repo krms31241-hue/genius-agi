@@ -1,54 +1,57 @@
-"""Providers Bootstrap - Initialize AI providers and models"""
+"""Initialize the configured AI provider with an offline fallback."""
 
 import logging
-from typing import Dict, Any, List
-import asyncio
+import os
+from typing import Any, List
+
+from core.ai_gateway_provider import AIGatewayProvider
 
 logger = logging.getLogger(__name__)
 
+
 class AIProvider:
-    """Base AI provider interface"""
     def __init__(self, name: str, model: str):
         self.name = name
         self.model = model
-    
-    async def generate(self, prompt: str, **kwargs) -> str:
+
+    async def generate(self, prompt: str, **kwargs: Any) -> str:
         raise NotImplementedError
-    
-    async def shutdown(self):
-        pass
+
+    async def shutdown(self) -> None:
+        return None
+
 
 class LocalProvider(AIProvider):
-    """Local AI provider for offline operation"""
-    def __init__(self):
-        super().__init__("local", "genius-local-v1")
-    
-    async def generate(self, prompt: str, **kwargs) -> str:
-        """Generate response using local knowledge base"""
-        # Local knowledge-based response
-        return f"I've processed your query about: {prompt[:50]}... Using local knowledge base."
+    """Explicit offline fallback; it does not claim model reasoning."""
+
+    def __init__(self) -> None:
+        super().__init__("local-fallback", "offline-template-v1")
+
+    async def generate(self, prompt: str, **kwargs: Any) -> str:
+        return "AI Gateway is not configured. Set AI_GATEWAY_API_KEY to enable model-backed responses."
+
 
 class ProvidersBootstrap:
-    """Bootstrap and initialize all AI providers"""
-    
-    def __init__(self):
-        self.providers: List[AIProvider] = []
-        self.active_provider = None
-    
-    async def initialize(self) -> 'ProvidersBootstrap':
-        """Initialize available providers"""
-        logger.info("Bootstrapping providers...")
-        
-        # Initialize local provider (always available)
-        local = LocalProvider()
-        self.providers.append(local)
-        self.active_provider = local
-        
-        logger.info(f"Initialized {len(self.providers)} provider(s)")
+    def __init__(self) -> None:
+        self.providers: List[AIProvider | AIGatewayProvider] = []
+        self.active_provider: AIProvider | AIGatewayProvider | None = None
+
+    async def initialize(self) -> "ProvidersBootstrap":
+        api_key = os.getenv("AI_GATEWAY_API_KEY")
+        if api_key:
+            provider = AIGatewayProvider(
+                api_key=api_key,
+                model=os.getenv("AI_GATEWAY_MODEL", "google/gemini-3.1-flash-lite"),
+            )
+            logger.info("Initialized AI Gateway provider for model %s", provider.model)
+        else:
+            provider = LocalProvider()
+            logger.warning("AI_GATEWAY_API_KEY is missing; using offline fallback")
+
+        self.providers = [provider]
+        self.active_provider = provider
         return self
-    
-    async def shutdown(self):
-        """Shutdown all providers"""
+
+    async def shutdown(self) -> None:
         for provider in self.providers:
             await provider.shutdown()
-        logger.info("All providers shut down")
