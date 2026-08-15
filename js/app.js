@@ -237,10 +237,14 @@ async function processMessage(input) {
   let response;
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/chat", {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({
+        message: input,
+        agent: state.agent,
+        context: { files: state.files.map(({ name, content, size }) => ({ name, content, size })) }
+      })
     });
 
     if (res.ok) {

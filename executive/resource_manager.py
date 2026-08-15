@@ -132,17 +132,25 @@ class ResourceManager:
 
         return recommendations
 
-    def get_resource_policy(self, mode="balanced"):
-        from executive.resource_policy import ResourcePolicy, ResourceMode
+    def get_resource_policy(self, mode=None):
+        from executive.resource_policy import ResourcePolicy, ResourceLimits, ResourceMode
 
-        mode = mode.lower()
-
+        mode = (mode or self.get_current_mode()).lower()
         mapping = {
             "eco": ResourceMode.ECO,
             "balanced": ResourceMode.BALANCED,
             "performance": ResourceMode.PERFORMANCE,
         }
-
+        if mode == ResourceMode.CUSTOM.value:
+            custom = self.user_consent.custom_limits()
+            return ResourcePolicy(
+                ResourceMode.CUSTOM,
+                ResourceLimits(
+                    cpu_percent=custom["cpu"],
+                    memory_percent=custom["memory"],
+                    disk_percent=custom["disk"],
+                ),
+            )
         return ResourcePolicy(mapping.get(mode, ResourceMode.BALANCED))
 
     def evaluate_resources(self, mode=None):
@@ -155,10 +163,10 @@ class ResourceManager:
         system = self.get_system_resources()
         return policy.evaluate(system)
 
-    def can_schedule(self, mode="balanced"):
+    def can_schedule(self, mode=None):
         return self.evaluate_resources(mode)["allow_new_tasks"]
 
-    def requires_user_permission(self, mode="balanced"):
+    def requires_user_permission(self, mode=None):
         policy = self.get_resource_policy(mode)
         system = self.get_system_resources()
         return policy.should_request_user_permission(system)
