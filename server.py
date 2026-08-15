@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from runtime.genius_runtime import GeniusRuntime
 import asyncio
 import logging
@@ -18,12 +18,17 @@ app = FastAPI(
 )
 
 # CORS Configuration
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["POST", "GET"],
+    allow_headers=["Content-Type"],
 )
 
 runtime = GeniusRuntime()
@@ -31,7 +36,7 @@ runtime = GeniusRuntime()
 class ChatRequest(BaseModel):
     message: str
     agent: str = "general"
-    context: dict = {}
+    context: dict = Field(default_factory=dict)
 
 class ChatResponse(BaseModel):
     response: str
@@ -65,7 +70,7 @@ async def health():
         "version": "3.0"
     }
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """Main chat endpoint"""
     if not req.message.strip():
@@ -85,9 +90,9 @@ async def chat(req: ChatRequest):
             memory_used=result.get("memory_used", 0),
             timestamp=result.get("timestamp", 0)
         )
-    except Exception as e:
-        logger.error(f"Error processing chat: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Error processing chat")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/agents")
 async def get_agents():

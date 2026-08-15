@@ -7,6 +7,7 @@ Providers -> Router -> Memory -> Executive
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict
 
 from core.bootstrap.providers_bootstrap import ProvidersBootstrap
@@ -80,8 +81,18 @@ class GeniusRuntime:
         except Exception as e:
             logger.warning(f"Resource check skipped: {e}")
 
+        provider_prompt = prompt
+        files = kwargs.get("context", {}).get("files", [])
+        if files:
+            attachments = "\n\n".join(
+                f"Attachment: {item.get('name', 'unnamed')}\n{item.get('content', '')}"
+                for item in files
+                if isinstance(item, dict)
+            )
+            provider_prompt = f"{prompt}\n\nAttached files:\n{attachments}"
+
         response = await self.router.generate(
-            prompt,
+            provider_prompt,
             **kwargs
         )
 
@@ -105,7 +116,8 @@ class GeniusRuntime:
         return {
             "response": response.content,
             "model": response.model,
-            "memory_used": len(memories)
+            "memory_used": len(memories),
+            "timestamp": time.time()
         }
 
 

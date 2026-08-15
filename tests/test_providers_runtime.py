@@ -1,34 +1,18 @@
+"""Smoke tests for the provider bootstrap."""
+
 import asyncio
+import unittest
 
-from core.bootstrap.providers_bootstrap import (
-    ProvidersBootstrap,
-)
-
-
-async def main():
-
-    bootstrap = ProvidersBootstrap()
-
-    manager = await bootstrap.initialize()
-
-    print(
-        "Providers:",
-        manager.list_providers(),
-    )
-
-    print(
-        "Count:",
-        manager.provider_count(),
-    )
+from core.bootstrap.providers_bootstrap import ProvidersBootstrap
 
 
-    health = await manager.health()
+class TestProvidersBootstrap(unittest.IsolatedAsyncioTestCase):
+    async def test_initializes_local_provider_and_shuts_down(self):
+        bootstrap = ProvidersBootstrap()
+        manager = await bootstrap.initialize()
 
-    print(
-        "Health:",
-        health,
-    )
+        self.assertEqual(len(manager.providers), 1)
+        self.assertEqual(manager.active_provider.name, "local")
+        self.assertEqual(manager.active_provider.model, "genius-local-v1")
 
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        await manager.shutdown()
