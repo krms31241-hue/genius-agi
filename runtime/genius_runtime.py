@@ -81,6 +81,7 @@ class GeniusRuntime:
         except Exception as e:
             logger.warning(f"Resource check skipped: {e}")
 
+        kwargs["relevant_memories"] = memories
         provider_prompt = prompt
         files = kwargs.get("context", {}).get("files", [])
         if files:
